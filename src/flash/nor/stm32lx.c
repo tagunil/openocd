@@ -343,7 +343,7 @@ COMMAND_HANDLER(stm32lx_handle_lock_command)
 	retval = stm32lx_lock(bank);
 
 	if (retval == ERROR_OK)
-		command_print(CMD, "STM32Lx locked, takes effect after power cycle.");
+		command_print(CMD, "STM32Lx locked.");
 	else
 		command_print(CMD, "STM32Lx lock failed");
 
@@ -363,7 +363,7 @@ COMMAND_HANDLER(stm32lx_handle_unlock_command)
 	retval = stm32lx_unlock(bank);
 
 	if (retval == ERROR_OK)
-		command_print(CMD, "STM32Lx unlocked, takes effect after power cycle.");
+		command_print(CMD, "STM32Lx unlocked.");
 	else
 		command_print(CMD, "STM32Lx unlock failed");
 
@@ -1277,6 +1277,10 @@ static int stm32lx_lock(struct flash_bank *bank)
 	if (retval != ERROR_OK)
 		return retval;
 
+	retval = stm32lx_obl_launch(bank);
+	if (retval != ERROR_OK)
+		return retval;
+
 	return ERROR_OK;
 }
 
@@ -1303,6 +1307,10 @@ static int stm32lx_unlock(struct flash_bank *bank)
 	if (retval != ERROR_OK)
 		return retval;
 
+	retval = stm32lx_obl_launch(bank);
+	if (retval != ERROR_OK)
+		return retval;
+
 	return ERROR_OK;
 }
 
@@ -1324,15 +1332,7 @@ static int stm32lx_mass_erase(struct flash_bank *bank)
 	if (retval != ERROR_OK)
 		return retval;
 
-	retval = stm32lx_obl_launch(bank);
-	if (retval != ERROR_OK)
-		return retval;
-
 	retval = stm32lx_unlock(bank);
-	if (retval != ERROR_OK)
-		return retval;
-
-	retval = stm32lx_obl_launch(bank);
 	if (retval != ERROR_OK)
 		return retval;
 
