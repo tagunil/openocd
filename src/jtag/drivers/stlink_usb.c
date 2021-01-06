@@ -839,7 +839,7 @@ static int stlink_cmd_allow_retry(void *handle, const uint8_t *buf, int size)
 
 		res = stlink_usb_error_check(handle);
 		if (res == ERROR_WAIT && retries < MAX_WAIT_RETRIES) {
-			unsigned int delay_us = (1<<retries++) * 1000;
+			unsigned int delay_us = (1<<retries++) * 10000;
 			LOG_DEBUG("stlink_cmd_allow_retry ERROR_WAIT, retry %d, delaying %u microseconds", retries, delay_us);
 			usleep(delay_us);
 			continue;
@@ -2372,7 +2372,7 @@ static int stlink_usb_read_mem(void *handle, uint32_t addr, uint32_t size,
 				uint32_t head_bytes = size - (addr & (size - 1));
 				retval = stlink_usb_read_mem8(handle, addr, head_bytes, buffer);
 				if (retval == ERROR_WAIT && retries < MAX_WAIT_RETRIES) {
-					usleep((1<<retries++) * 1000);
+					usleep((1<<retries++) * 10000);
 					continue;
 				}
 				if (retval != ERROR_OK)
@@ -2393,7 +2393,7 @@ static int stlink_usb_read_mem(void *handle, uint32_t addr, uint32_t size,
 			retval = stlink_usb_read_mem8(handle, addr, bytes_remaining, buffer);
 
 		if (retval == ERROR_WAIT && retries < MAX_WAIT_RETRIES) {
-			usleep((1<<retries++) * 1000);
+			usleep((1<<retries++) * 10000);
 			continue;
 		}
 		if (retval != ERROR_OK)
@@ -2452,7 +2452,7 @@ static int stlink_usb_write_mem(void *handle, uint32_t addr, uint32_t size,
 				uint32_t head_bytes = size - (addr & (size - 1));
 				retval = stlink_usb_write_mem8(handle, addr, head_bytes, buffer);
 				if (retval == ERROR_WAIT && retries < MAX_WAIT_RETRIES) {
-					usleep((1<<retries++) * 1000);
+					usleep((1<<retries++) * 10000);
 					continue;
 				}
 				if (retval != ERROR_OK)
@@ -2473,7 +2473,7 @@ static int stlink_usb_write_mem(void *handle, uint32_t addr, uint32_t size,
 		} else
 			retval = stlink_usb_write_mem8(handle, addr, bytes_remaining, buffer);
 		if (retval == ERROR_WAIT && retries < MAX_WAIT_RETRIES) {
-			usleep((1<<retries++) * 1000);
+			usleep((1<<retries++) * 10000);
 			continue;
 		}
 		if (retval != ERROR_OK)
