@@ -125,6 +125,8 @@ struct stm32lx_part_info {
 
 	uint32_t flash_base;	/* Flash controller registers location */
 	uint32_t fsize_base;	/* Location of FSIZE register */
+
+	uint32_t user_byte; /* USER option byte default value */
 };
 
 struct stm32lx_flash_bank {
@@ -176,6 +178,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.has_dual_banks		= false,
 		.flash_base			= 0x40023C00,
 		.fsize_base			= 0x1FF8004C,
+		.user_byte			= 0xFF0700F8,
 	},
 	{
 		.id					= 0x417,
@@ -188,6 +191,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.has_dual_banks		= false,
 		.flash_base			= 0x40022000,
 		.fsize_base			= 0x1FF8007C,
+		.user_byte			= 0xFF0700F8,
 	},
 	{
 		.id					= 0x425,
@@ -200,6 +204,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.has_dual_banks		= false,
 		.flash_base			= 0x40022000,
 		.fsize_base			= 0x1FF8007C,
+		.user_byte			= 0xFF0700F8,
 	},
 	{
 		.id					= 0x427,
@@ -212,6 +217,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.has_dual_banks		= false,
 		.flash_base			= 0x40023C00,
 		.fsize_base			= 0x1FF800CC,
+		.user_byte			= 0xFF0700F8,
 	},
 	{
 		.id					= 0x429,
@@ -224,6 +230,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.has_dual_banks		= false,
 		.flash_base			= 0x40023C00,
 		.fsize_base			= 0x1FF8004C,
+		.user_byte			= 0xFF0700F8,
 	},
 	{
 		.id					= 0x436,
@@ -237,6 +244,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.has_dual_banks		= true,
 		.flash_base			= 0x40023C00,
 		.fsize_base			= 0x1FF800CC,
+		.user_byte			= 0xFF0700F8,
 	},
 	{
 		.id					= 0x437,
@@ -250,6 +258,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.has_dual_banks		= true,
 		.flash_base			= 0x40023C00,
 		.fsize_base			= 0x1FF800CC,
+		.user_byte			= 0xFF0700F8,
 	},
 	{
 		.id					= 0x447,
@@ -263,6 +272,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.has_dual_banks		= false,	/* determined in runtime */
 		.flash_base			= 0x40022000,
 		.fsize_base			= 0x1FF8007C,
+		.user_byte			= 0x7F8F8070,
 	},
 	{
 		.id					= 0x457,
@@ -275,6 +285,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.has_dual_banks		= false,
 		.flash_base			= 0x40022000,
 		.fsize_base			= 0x1FF8007C,
+		.user_byte			= 0x7F8F8070,
 	},
 };
 
@@ -1288,6 +1299,8 @@ static int stm32lx_unlock(struct flash_bank *bank)
 {
 	int retval;
 	struct target *target = bank->target;
+	struct stm32lx_flash_bank *stm32lx_info = bank->driver_priv;
+	uint32_t user_byte;
 
 	if (target->state != TARGET_HALTED) {
 		LOG_ERROR("Target not halted");
@@ -1304,6 +1317,20 @@ static int stm32lx_unlock(struct flash_bank *bank)
 		return retval;
 
 	retval = stm32lx_wait_until_bsy_clear_timeout(bank, 30000);
+	if (retval != ERROR_OK)
+		return retval;
+
+	retval = stm32lx_obl_launch(bank);
+	if (retval != ERROR_OK)
+		return retval;
+
+	retval = stm32lx_unlock_options_bytes(bank);
+	if (retval != ERROR_OK)
+		return retval;
+
+	/* restore USER option byte default value */
+	user_byte = stm32lx_info->part_info.user_byte;
+	retval = target_write_u32(target, OPTION_BYTES_ADDRESS + 4, user_byte);
 	if (retval != ERROR_OK)
 		return retval;
 
