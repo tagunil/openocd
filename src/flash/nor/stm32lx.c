@@ -128,6 +128,7 @@ struct stm32lx_part_info {
 	uint32_t fsize_base;	/* Location of FSIZE register */
 
 	uint32_t user_byte; /* USER option byte default value */
+	size_t num_wrps; /* WRP option bytes number */
 };
 
 struct stm32lx_flash_bank {
@@ -180,6 +181,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.flash_base			= 0x40023C00,
 		.fsize_base			= 0x1FF8004C,
 		.user_byte			= 0xFF0700F8,
+		.num_wrps			= 2,
 	},
 	{
 		.id					= 0x417,
@@ -193,6 +195,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.flash_base			= 0x40022000,
 		.fsize_base			= 0x1FF8007C,
 		.user_byte			= 0x7F8F8070,
+		.num_wrps			= 3,
 	},
 	{
 		.id					= 0x425,
@@ -206,6 +209,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.flash_base			= 0x40022000,
 		.fsize_base			= 0x1FF8007C,
 		.user_byte			= 0x7F8F8070,
+		.num_wrps			= 3,
 	},
 	{
 		.id					= 0x427,
@@ -219,6 +223,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.flash_base			= 0x40023C00,
 		.fsize_base			= 0x1FF800CC,
 		.user_byte			= 0xFF0700F8,
+		.num_wrps			= 4,
 	},
 	{
 		.id					= 0x429,
@@ -232,6 +237,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.flash_base			= 0x40023C00,
 		.fsize_base			= 0x1FF8004C,
 		.user_byte			= 0xFF0700F8,
+		.num_wrps			= 2,
 	},
 	{
 		.id					= 0x436,
@@ -246,6 +252,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.flash_base			= 0x40023C00,
 		.fsize_base			= 0x1FF800CC,
 		.user_byte			= 0xFF0700F8,
+		.num_wrps			= 6,
 	},
 	{
 		.id					= 0x437,
@@ -260,6 +267,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.flash_base			= 0x40023C00,
 		.fsize_base			= 0x1FF800CC,
 		.user_byte			= 0xFF0700F8,
+		.num_wrps			= 8,
 	},
 	{
 		.id					= 0x447,
@@ -274,6 +282,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.flash_base			= 0x40022000,
 		.fsize_base			= 0x1FF8007C,
 		.user_byte			= 0x7F8F8070,
+		.num_wrps			= 3,
 	},
 	{
 		.id					= 0x457,
@@ -287,7 +296,12 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.flash_base			= 0x40022000,
 		.fsize_base			= 0x1FF8007C,
 		.user_byte			= 0x7F8F8070,
+		.num_wrps			= 3,
 	},
+};
+
+static const uint32_t stm32lx_wrp_offsets[] = {
+	0x08, 0x0c, 0x10, 0x14, 0x18, 0x1c, 0x80, 0x84
 };
 
 /* flash bank stm32lx <base> <size> 0 0 <target#>
@@ -1338,6 +1352,12 @@ static int stm32lx_unlock(struct flash_bank *bank)
 	retval = target_write_u32(target, OPTION_BYTES_ADDRESS + 4, user_byte);
 	if (retval != ERROR_OK)
 		return retval;
+
+	/* Clear WRP bytes */
+	for (size_t i = 0; i < stm32lx_info->part_info.num_wrps; i++) {
+		uint32_t address = OPTION_BYTES_ADDRESS + stm32lx_wrp_offsets[i];
+		target_write_u32(target, address, 0xffff0000);
+	}
 
 	retval = stm32lx_wait_until_bsy_clear_timeout(bank, 30000);
 	if (retval != ERROR_OK)
