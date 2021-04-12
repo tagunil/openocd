@@ -191,7 +191,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.has_dual_banks		= false,
 		.flash_base			= 0x40022000,
 		.fsize_base			= 0x1FF8007C,
-		.user_byte			= 0xFF0700F8,
+		.user_byte			= 0x7F8F8070,
 	},
 	{
 		.id					= 0x425,
@@ -204,7 +204,7 @@ static const struct stm32lx_part_info stm32lx_parts[] = {
 		.has_dual_banks		= false,
 		.flash_base			= 0x40022000,
 		.fsize_base			= 0x1FF8007C,
-		.user_byte			= 0xFF0700F8,
+		.user_byte			= 0x7F8F8070,
 	},
 	{
 		.id					= 0x427,
