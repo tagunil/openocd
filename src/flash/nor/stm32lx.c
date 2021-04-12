@@ -65,14 +65,15 @@
 #define FLASH_PECR__OBL_LAUNCH	(1<<18)
 
 /* FLASH_SR bits */
-#define FLASH_SR__BSY		(1<<0)
-#define FLASH_SR__EOP		(1<<1)
-#define FLASH_SR__ENDHV		(1<<2)
-#define FLASH_SR__READY		(1<<3)
-#define FLASH_SR__WRPERR	(1<<8)
-#define FLASH_SR__PGAERR	(1<<9)
-#define FLASH_SR__SIZERR	(1<<10)
-#define FLASH_SR__OPTVERR	(1<<11)
+#define FLASH_SR__BSY			(1<<0)
+#define FLASH_SR__EOP			(1<<1)
+#define FLASH_SR__ENDHV			(1<<2)
+#define FLASH_SR__READY			(1<<3)
+#define FLASH_SR__WRPERR		(1<<8)
+#define FLASH_SR__PGAERR		(1<<9)
+#define FLASH_SR__SIZERR		(1<<10)
+#define FLASH_SR__OPTVERR		(1<<11)
+#define FLASH_SR__OPTVERRUSR	(1<<12)
 
 /* Unlock keys */
 #define PEKEY1			0x89ABCDEF
@@ -1240,10 +1241,14 @@ static int stm32lx_wait_until_bsy_clear_timeout(struct flash_bank *bank, int tim
 		retval = ERROR_FAIL;
 	}
 
-	/* Clear but report errors */
 	if (status & FLASH_SR__OPTVERR) {
 		/* If this operation fails, we ignore it and report the original retval */
 		target_write_u32(target, stm32lx_info->flash_base + FLASH_SR, status & FLASH_SR__OPTVERR);
+	}
+
+	if (status & FLASH_SR__OPTVERRUSR) {
+		/* If this operation fails, we ignore it and report the original retval */
+		target_write_u32(target, stm32lx_info->flash_base + FLASH_SR, status & FLASH_SR__OPTVERRUSR);
 	}
 
 	return retval;
@@ -1331,6 +1336,10 @@ static int stm32lx_unlock(struct flash_bank *bank)
 	/* restore USER option byte default value */
 	user_byte = stm32lx_info->part_info.user_byte;
 	retval = target_write_u32(target, OPTION_BYTES_ADDRESS + 4, user_byte);
+	if (retval != ERROR_OK)
+		return retval;
+
+	retval = stm32lx_wait_until_bsy_clear_timeout(bank, 30000);
 	if (retval != ERROR_OK)
 		return retval;
 
